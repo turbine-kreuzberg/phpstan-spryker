@@ -14,11 +14,10 @@ use PHPStan\Reflection\Annotations\AnnotationsMethodsClassReflectionExtension;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\ShouldNotHappenException;
-use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
 use PHPStan\Type\ErrorType;
+use PHPStan\Type\ObjectType;
 use PHPStan\Type\Type;
-use PHPStan\Type\TypeCombinator;
 
 class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtension
 {
@@ -128,7 +127,9 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
      */
     protected function saveCachedValue(string $cacheKey, string $variableCacheKey, Type $value): void
     {
-        $this->cache->save($cacheKey, $variableCacheKey, $value);
+        if ($value instanceof ObjectType) {
+            $this->cache->save($cacheKey, $variableCacheKey, serialize($value));
+        }
     }
 
     /**
@@ -139,7 +140,12 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
      */
     protected function getCachedValue(string $cacheKey, string $variableCacheKey): ?Type
     {
-        return $this->cache->load($cacheKey, $variableCacheKey);
+        $data = $this->cache->load($cacheKey, $variableCacheKey);
+        if ($data === null) {
+            return null;
+        }
+
+        return unserialize($data, ['allowed_classes' => [ObjectType::class]]) ?? null;
     }
 
     /**
