@@ -2,7 +2,6 @@ includes:
     - ../vendor/phpstan/phpstan-strict-rules/rules.neon
 
 parameters:
-    checkMissingIterableValueType: false
     ignoreErrors:
         -
             message: "#.+DynamicMethodMissingPhpDocAnnotationRule::processNode\\(\\) should be contravariant with parameter .+ of method .+Node\\>::processNode\\(\\)#"

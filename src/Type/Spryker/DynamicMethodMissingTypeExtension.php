@@ -14,9 +14,11 @@ use PHPStan\Reflection\Annotations\AnnotationsMethodsClassReflectionExtension;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\ParametersAcceptorSelector;
 use PHPStan\ShouldNotHappenException;
+use PHPStan\Type\Constant\ConstantBooleanType;
 use PHPStan\Type\DynamicMethodReturnTypeExtension;
 use PHPStan\Type\ErrorType;
 use PHPStan\Type\Type;
+use PHPStan\Type\TypeCombinator;
 
 class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtension
 {
@@ -87,7 +89,7 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
      *
      * @return \PHPStan\Type\Type
      */
-    public function getTypeFromMethodCall(MethodReflection $methodReflection, MethodCall $methodCall, Scope $scope): Type
+    public function getTypeFromMethodCall(MethodReflection $methodReflection, MethodCall $methodCall, Scope $scope): ?Type
     {
         [$cacheKey, $variableCacheKey] = $this->generateCacheKeys($methodReflection, $scope);
         $type = $this->getCachedValue($cacheKey, $variableCacheKey);
@@ -96,22 +98,6 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
             return $type;
         }
 
-        $type = $this->getTypeFromAnnotationsMethodClassReflection($methodReflection, $scope);
-        $this->saveCachedValue($cacheKey, $variableCacheKey, $type);
-
-        return $type;
-    }
-
-    /**
-     * @param \PHPStan\Reflection\MethodReflection $methodReflection
-     * @param \PHPStan\Analyser\Scope $scope
-     *
-     * @throws \PHPStan\ShouldNotHappenException
-     *
-     * @return \PHPStan\Type\Type
-     */
-    protected function getTypeFromAnnotationsMethodClassReflection(MethodReflection $methodReflection, Scope $scope): Type
-    {
         if (!$scope->isInClass()) {
             throw new ShouldNotHappenException();
         }
@@ -122,7 +108,15 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
 
         $annotationMethod = $this->annotationsMethodsClassReflectionExtension->getMethod($scope->getClassReflection(), $methodReflection->getName());
 
-        return ParametersAcceptorSelector::selectSingle($annotationMethod->getVariants())->getReturnType();
+        $type = ParametersAcceptorSelector::selectFromArgs(
+            $scope,
+            $methodCall->getArgs(),
+            $annotationMethod->getVariants(),
+        )->getReturnType();
+
+        $this->saveCachedValue($cacheKey, $variableCacheKey, $type);
+
+        return $type;
     }
 
     /**
