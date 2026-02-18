@@ -127,9 +127,7 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
      */
     protected function saveCachedValue(string $cacheKey, string $variableCacheKey, Type $value): void
     {
-        if ($value instanceof ObjectType) {
-            $this->cache->save($cacheKey, $variableCacheKey, serialize($value));
-        }
+        return;
     }
 
     /**
@@ -140,12 +138,7 @@ class DynamicMethodMissingTypeExtension implements DynamicMethodReturnTypeExtens
      */
     protected function getCachedValue(string $cacheKey, string $variableCacheKey): ?Type
     {
-        $data = $this->cache->load($cacheKey, $variableCacheKey);
-        if ($data === null) {
-            return null;
-        }
-
-        return unserialize($data, ['allowed_classes' => [ObjectType::class]]) ?? null;
+        return null;
     }
 
     /**
